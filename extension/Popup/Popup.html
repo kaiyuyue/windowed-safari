@@ -3,97 +3,109 @@
 
 <head>
   <style>
-    body,
-    html {
-      padding: 0px;
-      margin: 0px;
-      background-color: rgba(237, 237, 237, 0.1);
+    :root {
+      color-scheme: light dark;
+      --popup-text: #1f2937;
+      --popup-subtle-text: #475569;
+      --row-hover: rgba(15, 23, 42, 0.06);
+      --row-active: rgba(15, 23, 42, 0.1);
+      --focus-ring: rgba(10, 132, 255, 0.85);
+      --icon-filter: none;
+      --select-bg: rgba(255, 255, 255, 0.75);
+      --select-border: rgba(15, 23, 42, 0.12);
+      --section-divider: rgba(15, 23, 42, 0.12);
+      --control-bg: rgba(255, 255, 255, 0.62);
+      --control-border: rgba(15, 23, 42, 0.22);
+      --control-dot: rgba(10, 132, 255, 0.95);
+      --control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 2px rgba(15, 23, 42, 0.16);
     }
 
     @media (prefers-color-scheme: dark) {
-
-      body,
-      html {
-        /* Explicit background color for firefox */
-        background-color: rgba(237, 237, 237, 0.1);
+      :root {
+        --popup-text: #e5e7eb;
+        --popup-subtle-text: #cbd5e1;
+        --row-hover: rgba(255, 255, 255, 0.12);
+        --row-active: rgba(255, 255, 255, 0.18);
+        --icon-filter: brightness(0) invert(1) contrast(1.05);
+        --select-bg: rgba(255, 255, 255, 0.08);
+        --select-border: rgba(255, 255, 255, 0.18);
+        --section-divider: rgba(255, 255, 255, 0.18);
+        --control-bg: rgba(255, 255, 255, 0.08);
+        --control-border: rgba(255, 255, 255, 0.28);
+        --control-dot: rgba(125, 211, 252, 0.98);
+        --control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 1px 2px rgba(0, 0, 0, 0.35);
       }
+    }
+
+    html,
+    body {
+      padding: 0;
+      margin: 0;
+      background: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+      color: var(--popup-text);
     }
 
     .popup {
-      font-family: system-ui, sans-serif;
       user-select: none;
-      padding: 20px;
-
-      background-color: rgba(237, 237, 237, 0.1);
-      font-size: 14px;
-      color: black;
-      z-index: 2147483647;
       width: 300px;
-
+      padding: 12px;
+      box-sizing: border-box;
+      color: var(--popup-text);
       display: flex;
       flex-direction: column;
       text-align: left;
+      background: transparent;
     }
 
-    @media (prefers-color-scheme: dark) {
-      .popup {
-        filter: invert(0.9);
-      }
-    }
-
-    .popup:focus:not(:focus-visible) {
+    .popup:focus,
+    .popup:focus-visible {
       outline: none;
     }
 
-    .popup [data-target] {
-      cursor: pointer;
-      padding: 5px;
-      color: black;
-      /* Force black for if the page has color: white */
-
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-
-      font-size: inherit;
-      border: none;
-      box-shadow: none;
-
-      white-space: nowrap;
-    }
-
-    [data-target]::-moz-focus-inner,
-    .popup::-moz-focus-inner {
-      border: none;
-    }
-
-    [data-target]:focus {
-      filter: brightness(0.95);
-    }
-
-    [data-target]:focus:not(:focus-visible) {
-      outline: none;
-    }
-
-    [data-target]:hover {
-      filter: brightness(0.9);
-      border-radius: 5px;
-      background-color: rgba(237, 237, 237, 1.0)
-    }
-
-    [data-target]>input[type="radio"],
-    [data-target]>input[type="checkbox"] {
+    h1,
+    h2,
+    h3 {
       margin: 0;
-      margin-right: 20px;
+      color: var(--popup-text);
+      font-weight: 600;
+      letter-spacing: -0.01em;
     }
 
-    [data-target]>img {
-      height: 1.2em;
-      width: 1.2em;
-      margin-right: 1em;
+    h2 {
+      padding: 2px 4px 10px;
+      font-size: 20px;
     }
-  </style>
-  <style>
+
+    h3 {
+      padding: 6px 4px;
+      font-size: 13px;
+      color: var(--popup-subtle-text);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    p {
+      all: unset;
+      display: block;
+      padding: 4px;
+      font-size: 13px;
+      line-height: 1.4;
+      color: var(--popup-subtle-text);
+    }
+
+    select {
+      border-radius: 8px;
+      border: 1px solid var(--select-border);
+      background: var(--select-bg);
+      color: var(--popup-text);
+      padding: 2px 6px;
+      font: inherit;
+    }
+
     hide-if-no-picture-in-picture {
       display: none;
     }
@@ -102,65 +114,107 @@
       all: inherit;
     }
 
-    h1,
-    h2,
-    h3 {
-      padding: 3px;
-      margin: 0px;
-    }
-
-    p {
-      all: unset;
-      display: block;
-      padding: 3px;
-      font-size: 14px;
-    }
-
+    .popup [data-target],
     button {
       width: 100%;
-      min-height: 28px;
+      min-height: 32px;
       cursor: pointer;
-      padding: 1.25em;
-      padding-top: 0.25em;
-      padding-bottom: 0.25em;
-
+      padding: 9px 10px;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--popup-text);
       display: flex;
       flex-direction: row;
       align-items: center;
-
-      font-size: inherit;
+      font-size: 14px;
       border: none;
       box-shadow: none;
-
       white-space: nowrap;
+      box-sizing: border-box;
+      transition: background-color 120ms ease, transform 120ms ease;
     }
 
+    .popup [data-target]::-moz-focus-inner,
+    .popup::-moz-focus-inner,
     button::-moz-focus-inner {
       border: none;
+      outline: 0;
     }
 
+    .popup [data-target]:hover,
+    .popup [data-target]:focus,
+    button:hover,
     button:focus {
-      filter: brightness(0.95);
-    }
-
-    button:focus:not(:focus-visible) {
+      background: var(--row-hover);
       outline: none;
     }
 
-    button:hover {
-      filter: brightness(0.9);
+    .popup [data-target]:active,
+    button:active {
+      background: var(--row-active);
+      transform: scale(0.99);
     }
 
-    button>input[type="radio"],
-    button>input[type="checkbox"] {
+    .popup [data-target]:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: -2px;
+    }
+
+    .popup [data-target] > input[type="radio"],
+    .popup [data-target] > input[type="checkbox"],
+    button > input[type="radio"],
+    button > input[type="checkbox"] {
       margin: 0;
-      margin-right: 16px;
+      margin-right: 14px;
+      width: 16px;
+      height: 16px;
+      flex: 0 0 16px;
+      appearance: none;
+      -webkit-appearance: none;
+      border: 1px solid var(--control-border);
+      border-radius: 999px;
+      background: var(--control-bg);
+      box-shadow: var(--control-shadow);
+      transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
     }
 
-    button>img {
-      height: 1.2em;
-      width: 1.2em;
-      margin-right: 1em;
+    .popup [data-target] > input[type="checkbox"],
+    button > input[type="checkbox"] {
+      border-radius: 6px;
+    }
+
+    .popup [data-target] > input[type="radio"]:checked,
+    button > input[type="radio"]:checked {
+      border-color: color-mix(in srgb, var(--control-dot) 55%, var(--control-border));
+      box-shadow:
+        inset 0 0 0 4px var(--control-dot),
+        inset 0 1px 0 rgba(255, 255, 255, 0.45),
+        0 1px 2px rgba(15, 23, 42, 0.16);
+    }
+
+    .popup [data-target] > input[type="checkbox"]:checked,
+    button > input[type="checkbox"]:checked {
+      border-color: color-mix(in srgb, var(--control-dot) 55%, var(--control-border));
+      box-shadow:
+        inset 0 0 0 3px var(--control-dot),
+        inset 0 1px 0 rgba(255, 255, 255, 0.45),
+        0 1px 2px rgba(15, 23, 42, 0.16);
+    }
+
+    .popup [data-target] > img,
+    button > img {
+      height: 1.1em;
+      width: 1.1em;
+      margin-right: 0.75em;
+      filter: var(--icon-filter);
+    }
+
+    .pip-divider {
+      height: 1px;
+      margin: 8px 4px;
+      background: var(--section-divider);
+      border-radius: 999px;
     }
   </style>
 </head>
@@ -184,7 +238,6 @@
     </div>
 
     <div id="working" style="display: none">
-      <h3>Website Settings</h3>
       <p>
         Fullscreen on
         <select style="width: 100px;">
@@ -200,26 +253,27 @@
         <label data-target="ask" title="Ask">
           <input type="radio" name="behaviour" value="ask" checked />
           <img src="../Images/Icon_Ask@scalable.svg" />
-          <span>Ask</span>
+          <span>Always Ask</span>
         </label>
 
         <label data-target="in-window" title="Fullscreen in the window.">
           <input type="radio" name="behaviour" value="in-window" />
           <img src="../Images/Icon_InWindow_Mono@scalable.svg" />
-          <span>In-Window</span>
+          <span>In Window</span>
         </label>
 
         <label data-target="fullscreen" title="Fullscreen in the screen.">
           <input type="radio" name="behaviour" value="fullscreen" />
           <img src="../Images/Icon_EnterFullscreen@scalable.svg" />
-          <span>Fullscreen</span>
+          <span>Full Screen</span>
         </label>
 
         <hide-if-no-picture-in-picture>
+          <div class="pip-divider" aria-hidden="true"></div>
           <label data-target="picture-in-picture" title="Picture-in-Picture mode.">
-            <input type="radio" name="picture_in_picture" />
+            <input type="checkbox" name="picture_in_picture" />
             <img src="../Images/Icon_PiP@scalable.svg" />
-            <span>Pic-in-Pic</span>
+            <span>Picture-in-Picture</span>
           </label>
         </hide-if-no-picture-in-picture>
 

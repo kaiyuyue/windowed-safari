@@ -283,7 +283,11 @@ const code_to_insert_in_page = on_webpage`{
       if (mode === "fullscreen") {
         let element = document.querySelector(`[data-${fullscreen_select}]`);
         disable_selector(element, fullscreen_select);
-        element.requestFullscreen();
+        if (typeof original_requestFullscreen === "function") {
+          original_requestFullscreen.call(element);
+        } else {
+          element.requestFullscreen();
+        }
         return "FULLSCREEN";
       }
       if (mode === "windowed") {
@@ -331,7 +335,7 @@ const code_to_insert_in_page = on_webpage`{
           ${video_element
           ? Button({
             icon: browser.runtime.getURL("Images/Icon_PiP@scalable.svg"),
-            text: "Pic-in-Pic",
+            text: "Picture-in-Picture",
             title: "Picture-in-Picture (p)",
             target: "picture-in-picture",
           })
@@ -341,16 +345,16 @@ const code_to_insert_in_page = on_webpage`{
           icon: browser.runtime.getURL(
             "Images/Icon_InWindow_Mono@scalable.svg",
           ),
-          text: "In-Window",
-          title: "In-Window (i)",
+          text: "In Window",
+          title: "In Window (i)",
           target: "in-window",
         })}
           ${Button({
           icon: browser.runtime.getURL(
             "Images/Icon_EnterFullscreen@scalable.svg",
           ),
-          text: "Fullscreen",
-          title: "Fullscreen (f)",
+          text: "Full Screen",
+          title: "Full Screen (f)",
           target: "fullscreen",
         })}
         </div>
@@ -385,8 +389,8 @@ const code_to_insert_in_page = on_webpage`{
             icon: browser.runtime.getURL(
               "Images/Icon_PiP@scalable.svg",
             ),
-            text: "Pic-in-Pic",
-            title: "Picture in picture (p)",
+            text: "Picture-in-Picture",
+            title: "Picture-in-Picture (p)",
             target: "picture-in-picture",
           })
           : ""
@@ -395,16 +399,16 @@ const code_to_insert_in_page = on_webpage`{
           icon: browser.runtime.getURL(
             "Images/Icon_InWindow_Mono@scalable.svg",
           ),
-          text: "In-window",
-          title: "In-window (i)",
+          text: "In Window",
+          title: "In Window (i)",
           target: "in-window",
         })}
             ${Button({
           icon: browser.runtime.getURL(
             "Images/Icon_EnterFullscreen@scalable.svg",
           ),
-          text: "Fullscreen",
-          title: "Fullscreen (f)",
+          text: "Full Screen",
+          title: "Full Screen (f)",
           target: "fullscreen",
         })}
           </div>
@@ -450,7 +454,11 @@ const code_to_insert_in_page = on_webpage`{
             // 'async' function (or anywhere async (eg. after `resolve()` is called))
             let element = document.querySelector(`[data-${fullscreen_select}]`);
             disable_selector(element, fullscreen_select);
-            element.requestFullscreen();
+            if (typeof original_requestFullscreen === "function") {
+              original_requestFullscreen.call(element);
+            } else {
+              element.requestFullscreen();
+            }
 
             resolve("fullscreen");
           }
@@ -474,7 +482,11 @@ const code_to_insert_in_page = on_webpage`{
             // 'async' function (or anywhere async (eg. after `resolve()` is called))
             let element = document.querySelector(`[data-${fullscreen_select}]`);
             disable_selector(element, fullscreen_select);
-            element.requestFullscreen();
+            if (typeof original_requestFullscreen === "function") {
+              original_requestFullscreen.call(element);
+            } else {
+              element.requestFullscreen();
+            }
           }
           resolve(target_keyword);
         });
@@ -516,7 +528,7 @@ const code_to_insert_in_page = on_webpage`{
     send_fullscreen_events();
   }}
 
-  let exitFullscreen = async function(original) {
+  let exitFullscreen = async function(original, ...args) {
     let windowed_fullscreen = document.querySelector('[data-${fullscreen_active}]');
 
     if (windowed_fullscreen) {
@@ -536,7 +548,7 @@ const code_to_insert_in_page = on_webpage`{
 
       await make_tab_exit_fullscreen();
     } else {
-      original();
+      return original(...args);
     }
   }
 
@@ -554,7 +566,7 @@ const code_to_insert_in_page = on_webpage`{
       // Anything gone wrong, we default to normal fullscreen
       console.error(err);
       console.error('[Windowed] Something went wrong, so I default to normal fullscreen:', err.stack);
-      original();
+      return original(...args);
     }
   }
 
@@ -564,9 +576,9 @@ const code_to_insert_in_page = on_webpage`{
   let MUTATE_is_windowed_enabled = true;
   let requestFullscreen = function(original, ...args) {
     if (MUTATE_is_windowed_enabled === false) {
-      return original()
+      return original(...args)
     } else {
-      requestFullscreen_windowed.call(this, original, ...args);
+      return requestFullscreen_windowed.call(this, original, ...args);
     }
   }
 
@@ -590,7 +602,7 @@ const code_to_insert_in_page = on_webpage`{
     send_fullscreen_events();
   }
 
-  window.onmessage = (message) => {
+  window.addEventListener('message', (message) => {
     // Message from content script or parent content script
     if (message.source === message.target || message.source === window.parent) {
       if (message.data?.type === 'WINDOWED-confirm-fullscreen') {
@@ -622,7 +634,7 @@ const code_to_insert_in_page = on_webpage`{
         exitFullscreen.call(document, original_exitFullscreen);
       }
     }
-  }
+  });
 
   ${"" /* NOTE Replace all the `requestFullscreen` aliasses with calls to my own version */
   }
@@ -632,7 +644,7 @@ const code_to_insert_in_page = on_webpage`{
       let original_function = Element.prototype[requestFullscreenAlias];
       original_requestFullscreen = original_function;
       Element.prototype[requestFullscreenAlias] = function(...args) {
-        requestFullscreen.call(this, original_function.bind(this), ...args);
+        return requestFullscreen.call(this, original_function.bind(this), ...args);
       };
     }
   });
@@ -645,7 +657,7 @@ const code_to_insert_in_page = on_webpage`{
       let original_function = Document.prototype[exitFullscreenAlias];
       original_exitFullscreen = original_function;
       Document.prototype[exitFullscreenAlias] = function(...args) {
-        exitFullscreen.call(this, original_function.bind(this), ...args);
+        return exitFullscreen.call(this, original_function.bind(this), ...args);
       };
     }
   });
@@ -662,24 +674,21 @@ const code_to_insert_in_page = on_webpage`{
 // document.documentElement.appendChild(elt);
 // document.documentElement.removeChild(elt);
 
-let elt = document.createElement("script");
-elt.src = browser.runtime.getURL("script_to_insert_directly_into_page.js");
-document.documentElement.appendChild(elt);
-document.documentElement.removeChild(elt);
+if (!/(^|\.)youtube\.com$/i.test(window.location.hostname)) {
+  let elt = document.createElement("script");
+  elt.src = browser.runtime.getURL("script_to_insert_directly_into_page.js");
+  elt.onload = () => {
+    elt.remove();
+  };
+  elt.onerror = () => {
+    console.error("[WINDOWED] Failed to inject script_to_insert_directly_into_page.js");
+    elt.remove();
+  };
+  document.documentElement.appendChild(elt);
+}
 
-//// This is just for myself as debugging, but it will tell me if the script that is inserted,
-//// is actually the same as the script I am expecting it to be. (because debugging could get very frustrating)
-let async = async (async) => async();
-async(async () => {
-  let response = await fetch(elt.src);
-  let result = await response.text();
-  if (result !== code_to_insert_in_page) {
-    // prettier-ignore
-    console.error("[WINDOWED] HEY MICHIEL! The script I am inserting is not the same as the script I expect it to be!");
-    console.log("[WINDOWED] Code should actually be:");
-    console.log(code_to_insert_in_page);
-  }
-});
+//// Debugging parity check disabled in Safari: fetching extension script URLs from page context
+//// can trigger CORS errors and noisy unhandled promise rejections on strict sites.
 
 const send_event = (element, type) => {
   const event = new Event(type, {
@@ -738,39 +747,59 @@ let delay = (ms) => {
 
 let popup_css = `
   .popup {
-    background-color: white;
-    border-radius: 3px;
-    border: solid #eee 1px;
-    box-shadow: 0px 2px 4px #00000026;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    font-size: 16px;
-    color: black;
-    min-width: 150px;
+    --glass-fill: rgba(246, 248, 252, 0.72);
+    --glass-border: rgba(255, 255, 255, 0.78);
+    --glass-text: #111827;
+    --glass-hover: rgba(255, 255, 255, 0.58);
+    --glass-active: rgba(255, 255, 255, 0.78);
+    --glass-focus: rgba(10, 132, 255, 0.85);
+    --glass-icon-filter: none;
+
+    background: var(--glass-fill);
+    border-radius: 14px;
+    border: 1px solid var(--glass-border);
+    box-shadow:
+      0 14px 36px rgba(0, 0, 0, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.58);
+    backdrop-filter: blur(20px) saturate(1.35);
+    -webkit-backdrop-filter: blur(20px) saturate(1.35);
+    padding: 8px;
+    font-size: 14px;
+    color: var(--glass-text);
+    min-width: 190px;
     z-index: ${max_z_index};
 
     display: flex;
     flex-direction: column;
     align-items: stretch;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   }
 
-  .popup:focus:not(:focus-visible) {
+  .popup:focus,
+  .popup:focus-visible {
     outline: none;
   }
 
   @media (prefers-color-scheme: dark) {
     .popup {
-      filter: invert(0.9);
+      --glass-fill: rgba(29, 33, 41, 0.48);
+      --glass-border: rgba(255, 255, 255, 0.22);
+      --glass-text: #f2f5fa;
+      --glass-hover: rgba(255, 255, 255, 0.14);
+      --glass-active: rgba(255, 255, 255, 0.2);
+      --glass-icon-filter: brightness(0) invert(1) contrast(1.05);
+      box-shadow:
+        0 14px 36px rgba(0, 0, 0, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
     }
-  }  
+  }
 
   .popup [data-target] {
     cursor: pointer;
-    padding: 1.25em;
-    padding-top: 0.25em;
-    padding-bottom: 0.25em;
-    background-color: white;
-    color: black; /* Force black for if the page has color: white */
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
 
     display: flex;
     flex-direction: row;
@@ -781,6 +810,7 @@ let popup_css = `
     box-shadow: none;
 
     white-space: nowrap;
+    transition: background-color 140ms ease, transform 140ms ease;
   }
 
   [data-target]::-moz-focus-inner,
@@ -788,30 +818,55 @@ let popup_css = `
     border: 0;
     outline: 0;
   }
-  [data-target]:focus {
-    filter: brightness(0.95);
+
+  .popup [data-target]:hover,
+  .popup [data-target]:focus {
+    background: var(--glass-hover);
   }
-  [data-target]:focus:not(:focus-visible) {
-    outline: none;
+
+  .popup [data-target]:active {
+    background: var(--glass-active);
+    transform: scale(0.985);
   }
-  [data-target]:hover {
-    filter: brightness(0.9);
-    border-radius: 5px;
+
+  .popup [data-target]:focus-visible {
+    outline: 2px solid var(--glass-focus);
+    outline-offset: -2px;
   }
 
   [data-target] > img {
-    height: 1.2em;
-    width: 1.2em;
-    margin-right: 1em;
+    height: 1.1em;
+    width: 1.1em;
+    margin-right: 0.75em;
+    filter: var(--glass-icon-filter);
   }
 `;
+
 
 let has_style_created = false;
 let create_style_rule = () => {
   has_style_created = true;
 
   let css = `
-    [data-${body_class}] [data-${fullscreen_active}] {
+    [data-${fullscreen_parent}] {
+      all: initial !important;
+      z-index: ${max_z_index} !important;
+    }
+
+    [data-${fullscreen_parent}]::before,
+    [data-${fullscreen_parent}]::after {
+      display: none;
+    }
+
+    [data-${body_class}] {
+      overflow: hidden !important;
+    }
+
+    #player-theater-container {
+      min-height: 0 !important;
+    }
+
+    [data-${fullscreen_active}] {
       position: fixed !important;
       top: 0 !important;
       bottom: 0 !important;
@@ -822,36 +877,45 @@ let create_style_rule = () => {
       max-width: initial !important;
       max-height: initial !important;
       z-index: ${max_z_index} !important;
-      background-color: rgb(0,0,0) !important;
+      background-color: black !important;
     }
 
-    [data-${body_class}] [data-${fullscreen_parent}] {
-      /* This thing is css black magic */
-      all: initial !important;
-      z-index: ${max_z_index} !important;
-
-      /* Debugging */
-      background-color: rgb(0,0,0) !important;
+    [data-${fullscreen_active}] video,
+    [data-${fullscreen_active}] .html5-main-video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: contain !important;
     }
 
-    /* Not sure if this is necessary, but putting it here just in case */
-    [data-${body_class}] [data-${fullscreen_parent}]::before,
-    [data-${body_class}] [data-${fullscreen_parent}]::after {
-      display: none;
+    [data-${fullscreen_active}] #movie_player,
+    [data-${fullscreen_active}] .html5-video-player,
+    [data-${fullscreen_active}] .html5-video-container,
+    [data-${fullscreen_active}] .video-stream {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      max-width: none !important;
+      max-height: none !important;
     }
 
-    [data-${body_class}] {
-      /* Prevent scrolling */
-      overflow: hidden !important;
-
-      /* For debugging, leaving this just in here so I see when something goes wrong */
-      /* background-color: rgb(113, 0, 180); */
-      background-color: rgb(0,0,0)
+    [data-${fullscreen_active}] .ytp-chrome-bottom {
+      left: 0 !important;
+      right: 0 !important;
+      width: auto !important;
+      max-width: none !important;
+      box-sizing: border-box !important;
     }
 
-    /* I know I want it to be generic, but still this is a youtube specific fix */
-    [data-${body_class}] #player-theater-container {
-      min-height: 0 !important;
+    [data-${fullscreen_active}] .ytp-progress-bar-container {
+      left: 12px !important;
+      right: 12px !important;
+      width: auto !important;
+      max-width: none !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      box-sizing: border-box !important;
     }
   `;
 
@@ -901,6 +965,11 @@ let last_click_element = null;
 
 let last_popup = null;
 let is_in_fullscreen = false;
+let youtube_native_fullscreen_cooldown_until = 0;
+
+let mark_youtube_native_fullscreen_cooldown = () => {
+  youtube_native_fullscreen_cooldown_until = Date.now() + 2000;
+};
 
 let clear_popup = () => {
   if (last_popup != null) {
@@ -952,8 +1021,16 @@ let go_in_window = async () => {
   clear_listeners();
   let element = document.querySelector(`[data-${fullscreen_select}]`);
 
+  if (isYouTubeHost) {
+    setYouTubeFullscreenClass(true);
+  }
+
   let unlisten_to_escape = onEscapePress(() => {
-    exit_fullscreen_on_page();
+    if (isYouTubeHost) {
+      go_out_of_fullscreen();
+    } else {
+      exit_fullscreen_on_page();
+    }
   });
 
   let beforeunload_listener = (e) => {
@@ -982,12 +1059,21 @@ let go_in_window = async () => {
 
   // Add no scroll to the body and let everything kick in
   enable_selector(document.body, body_class);
+
+  if (isYouTubeHost) {
+    setTimeout(() => send_fullscreen_events(), 80);
+    setTimeout(() => send_fullscreen_events(), 280);
+  }
 };
 
 let go_into_fullscreen = async () => {
   create_style_rule();
   let element = document.querySelector(`[data-${fullscreen_select}]`);
   let cloned = element.cloneNode(true);
+
+  if (isYouTubeHost) {
+    setYouTubeFullscreenClass(true);
+  }
 
   clear_listeners();
   var mutationObserver = new MutationObserver(async (mutations) => {
@@ -1024,7 +1110,11 @@ let go_into_fullscreen = async () => {
   }
 
   let unlisten_to_escape = onEscapePress(() => {
-    exit_fullscreen_on_page();
+    if (isYouTubeHost) {
+      go_out_of_fullscreen();
+    } else {
+      exit_fullscreen_on_page();
+    }
   });
 
   let beforeunload_listener = (e) => {
@@ -1073,9 +1163,18 @@ let go_into_fullscreen = async () => {
   // Add no scroll to the body and let everything kick in
   enable_selector(document.body, body_class);
   window.focus(); // idk
+
+  if (isYouTubeHost) {
+    setTimeout(() => send_fullscreen_events(), 80);
+    setTimeout(() => send_fullscreen_events(), 280);
+  }
 };
 
 let go_out_of_fullscreen = async () => {
+  if (isYouTubeHost) {
+    setYouTubeFullscreenClass(false);
+  }
+
   // Remove no scroll from body (and remove all styles)
   disable_selector(document.body, body_class);
 
@@ -1153,6 +1252,190 @@ window.addEventListener("message", async (event) => {
     }
   }
 });
+
+const isYouTubeHost = /(^|\.)youtube\.com$/i.test(window.location.hostname);
+
+const getNativeFullscreenElement = () => {
+  for (let alias of fullscreenelement_aliasses) {
+    let element = document[alias];
+    if (element != null) {
+      return element;
+    }
+  }
+  return null;
+};
+
+const getYouTubePlayerElement = () => {
+  return (
+    document.querySelector("#movie_player") ||
+    document.querySelector(".html5-video-player") ||
+    document.querySelector("ytd-player")
+  );
+};
+
+const setYouTubeFullscreenClass = (enabled) => {
+  let player = getYouTubePlayerElement();
+  if (player == null) {
+    return;
+  }
+  player.classList.toggle("ytp-fullscreen", enabled);
+};
+
+const setFullscreenTargetAndEnter = async (element) => {
+  if (element == null) {
+    return;
+  }
+
+  enable_selector(element, fullscreen_select);
+
+  if (isYouTubeHost) {
+    let create_popup = external_functions[3];
+    if (typeof create_popup === "function") {
+      await create_popup();
+      return;
+    }
+  }
+
+  await go_into_fullscreen();
+};
+
+if (isYouTubeHost) {
+  const getFullscreenButtonFromEvent = (event) => {
+    for (let node of event.composedPath()) {
+      if (
+        node instanceof HTMLElement &&
+        node.matches("button.ytp-fullscreen-button")
+      ) {
+        return node;
+      }
+    }
+    return null;
+  };
+
+  document.addEventListener(
+    "click",
+    (event) => {
+      let button = getFullscreenButtonFromEvent(event);
+      if (button == null) {
+        return;
+      }
+
+      if (
+        getNativeFullscreenElement() != null ||
+        Date.now() < youtube_native_fullscreen_cooldown_until
+      ) {
+        return;
+      }
+
+      last_click_x = event.pageX ?? event.clientX;
+      last_click_y = event.pageY ?? event.clientY;
+      last_click_timestamp = Date.now();
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+
+      void (async () => {
+        try {
+          if (external_functions.is_fullscreen()) {
+            await go_out_of_fullscreen();
+            return;
+          }
+
+          let player =
+            button.closest(".html5-video-player") || getYouTubePlayerElement();
+          await setFullscreenTargetAndEnter(player);
+        } catch (err) {
+          console.error("[WINDOWED] YouTube fallback click handler failed", err);
+        }
+      })();
+    },
+    true,
+  );
+
+  document.addEventListener(
+    "dblclick",
+    (event) => {
+      let player = getYouTubePlayerElement();
+      if (player == null) {
+        return;
+      }
+
+      let clickedInsidePlayer = event
+        .composedPath()
+        .some((node) => node === player);
+      if (!clickedInsidePlayer) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+
+      void (async () => {
+        try {
+          if (external_functions.is_fullscreen()) {
+            await go_out_of_fullscreen();
+            return;
+          }
+          await setFullscreenTargetAndEnter(player);
+        } catch (err) {
+          console.error("[WINDOWED] YouTube fallback dblclick handler failed", err);
+        }
+      })();
+    },
+    true,
+  );
+
+  window.addEventListener(
+    "keydown",
+    (event) => {
+      if (event.key.toLowerCase() !== "f") {
+        return;
+      }
+
+      if (
+        getNativeFullscreenElement() != null ||
+        Date.now() < youtube_native_fullscreen_cooldown_until
+      ) {
+        return;
+      }
+
+      let target = /** @type {HTMLElement | null} */ (event.target);
+      if (
+        target != null &&
+        (target.isContentEditable ||
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT")
+      ) {
+        return;
+      }
+
+      let player = getYouTubePlayerElement();
+      if (player == null) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+
+      void (async () => {
+        try {
+          if (external_functions.is_fullscreen()) {
+            await go_out_of_fullscreen();
+            return;
+          }
+          await setFullscreenTargetAndEnter(player);
+        } catch (err) {
+          console.error("[WINDOWED] YouTube fallback key handler failed", err);
+        }
+      })();
+    },
+    true,
+  );
+}
 
 let is_escape_locked = false;
 // TODO Ask feedback from the Stadia community to find out what an helpful solution would be

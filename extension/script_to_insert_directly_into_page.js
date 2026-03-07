@@ -92,7 +92,7 @@
 
   let make_tab_exit_fullscreen = external_function(4);
 
-  let exitFullscreen = async function (original) {
+  let exitFullscreen = async function (original, ...args) {
     let windowed_fullscreen = document.querySelector('[data-windowed_long_id_that_does_not_conflict_active]');
 
     if (windowed_fullscreen) {
@@ -112,7 +112,7 @@
 
       await make_tab_exit_fullscreen();
     } else {
-      original();
+      return original(...args);
     }
   }
 
@@ -129,7 +129,7 @@
       // Anything gone wrong, we default to normal fullscreen
       console.error(err);
       console.error('[Windowed] Something went wrong, so I default to normal fullscreen:', err.stack);
-      original();
+      return original(...args);
     }
   }
 
@@ -139,9 +139,9 @@
   let MUTATE_is_windowed_enabled = true;
   let requestFullscreen = function (original, ...args) {
     if (MUTATE_is_windowed_enabled === false) {
-      return original()
+      return original(...args)
     } else {
-      requestFullscreen_windowed.call(this, original, ...args);
+      return requestFullscreen_windowed.call(this, original, ...args);
     }
   }
 
@@ -165,7 +165,7 @@
     send_fullscreen_events();
   }
 
-  window.onmessage = (message) => {
+  window.addEventListener('message', (message) => {
     // Message from content script or parent content script
     if (message.source === message.target || message.source === window.parent) {
       if (message.data?.type === 'WINDOWED-confirm-fullscreen') {
@@ -197,7 +197,7 @@
         exitFullscreen.call(document, original_exitFullscreen);
       }
     }
-  }
+  });
 
 
   let original_requestFullscreen = null;
@@ -206,7 +206,7 @@
       let original_function = Element.prototype[requestFullscreenAlias];
       original_requestFullscreen = original_function;
       Element.prototype[requestFullscreenAlias] = function (...args) {
-        requestFullscreen.call(this, original_function.bind(this), ...args);
+        return requestFullscreen.call(this, original_function.bind(this), ...args);
       };
     }
   });
@@ -218,7 +218,7 @@
       let original_function = Document.prototype[exitFullscreenAlias];
       original_exitFullscreen = original_function;
       Document.prototype[exitFullscreenAlias] = function (...args) {
-        exitFullscreen.call(this, original_function.bind(this), ...args);
+        return exitFullscreen.call(this, original_function.bind(this), ...args);
       };
     }
   });
