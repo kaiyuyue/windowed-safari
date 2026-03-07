@@ -743,13 +743,13 @@ let delay = (ms) => {
 
 let popup_css = `
   .popup {
-    --glass-surface: rgba(52, 54, 60, 0.68);
-    --glass-border: rgba(255, 255, 255, 0.24);
-    --glass-text: #f3f4f6;
-    --glass-hover: rgba(255, 255, 255, 0.13);
-    --glass-active: rgba(255, 255, 255, 0.2);
-    --glass-focus: rgba(122, 188, 255, 0.9);
-    --glass-icon-filter: brightness(0) invert(1) contrast(1.02);
+    --glass-surface: rgba(246, 249, 255, 0.64);
+    --glass-border: rgba(15, 23, 42, 0.14);
+    --glass-text: #111827;
+    --glass-hover: rgba(15, 23, 42, 0.08);
+    --glass-active: rgba(15, 23, 42, 0.14);
+    --glass-focus: rgba(10, 132, 255, 0.85);
+    --glass-icon-filter: none;
 
     position: relative;
     background: var(--glass-surface);
@@ -782,6 +782,7 @@ let popup_css = `
       --glass-text: #f2f5fa;
       --glass-hover: rgba(255, 255, 255, 0.14);
       --glass-active: rgba(255, 255, 255, 0.2);
+      --glass-focus: rgba(122, 188, 255, 0.9);
       --glass-icon-filter: brightness(0) invert(1) contrast(1.05);
     }
   }
