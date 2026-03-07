@@ -5,7 +5,6 @@
   <style>
     :root {
       color-scheme: light dark;
-      --popup-corner-radius: 18px;
       --popup-text: #1f2937;
       --popup-subtle-text: #475569;
       --row-hover: rgba(15, 23, 42, 0.06);
@@ -42,9 +41,6 @@
     body {
       padding: 0;
       margin: 0;
-      background: transparent;
-      border-radius: var(--popup-corner-radius);
-      overflow: hidden;
     }
 
     body {
@@ -57,13 +53,10 @@
       width: 300px;
       padding: 12px;
       box-sizing: border-box;
-      border-radius: var(--popup-corner-radius);
       color: var(--popup-text);
       display: flex;
       flex-direction: column;
       text-align: left;
-      background: transparent;
-      overflow: hidden;
     }
 
     .popup:focus,
@@ -125,7 +118,7 @@
       min-height: 32px;
       cursor: pointer;
       padding: 9px 10px;
-      border-radius: 10px;
+      border-radius: 14px;
       background: transparent;
       color: var(--popup-text);
       display: flex;

@@ -323,13 +323,11 @@ const code_to_insert_in_page = on_webpage`{
           : "translateX(-100%)";
 
       let popup = createElementFromHTML(`
-        <div class="popup" tabIndex="1" style="
+        <div class="popup anchored" tabIndex="1" style="
             position: absolute;
             top: ${last_click_y}px;
             left: ${last_click_x}px;
             transform: ${top_vs_bottom} ${left_vs_right};
-            border-radius: 10px;
-            padding: 10px;
             font-size: 16px;
           ">
           ${video_element
@@ -373,14 +371,12 @@ const code_to_insert_in_page = on_webpage`{
               z-index: ${max_z_index};
             "
           ></div>
-          <div class="popup" tabIndex="1" style="
+          <div class="popup dialog" tabIndex="1" style="
             position: fixed;
             top: 25vh;
             left: 50vw;
             transform: translateX(-50%) translateY(-50%);
             font-size: 16px;
-            border-radius: 10px;
-            padding: 10px;
           ">
             <div style="padding: 1.25em; padding-bottom: 0.25em; padding-top: 0.25em">Enter fullscreen</div>
             <div style="height: 10px"></div>
@@ -747,26 +743,25 @@ let delay = (ms) => {
 
 let popup_css = `
   .popup {
-    --glass-fill: rgba(246, 248, 252, 0.72);
-    --glass-border: rgba(255, 255, 255, 0.78);
-    --glass-text: #111827;
-    --glass-hover: rgba(255, 255, 255, 0.58);
-    --glass-active: rgba(255, 255, 255, 0.78);
-    --glass-focus: rgba(10, 132, 255, 0.85);
-    --glass-icon-filter: none;
+    --glass-surface: rgba(52, 54, 60, 0.68);
+    --glass-border: rgba(255, 255, 255, 0.24);
+    --glass-text: #f3f4f6;
+    --glass-hover: rgba(255, 255, 255, 0.13);
+    --glass-active: rgba(255, 255, 255, 0.2);
+    --glass-focus: rgba(122, 188, 255, 0.9);
+    --glass-icon-filter: brightness(0) invert(1) contrast(1.02);
 
-    background: var(--glass-fill);
-    border-radius: 14px;
+    position: relative;
+    background: var(--glass-surface);
+    border-radius: 24px;
     border: 1px solid var(--glass-border);
-    box-shadow:
-      0 14px 36px rgba(0, 0, 0, 0.22),
-      inset 0 1px 0 rgba(255, 255, 255, 0.58);
-    backdrop-filter: blur(20px) saturate(1.35);
-    -webkit-backdrop-filter: blur(20px) saturate(1.35);
-    padding: 8px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(26px) saturate(1.22);
+    -webkit-backdrop-filter: blur(26px) saturate(1.22);
+    padding: 10px;
     font-size: 14px;
     color: var(--glass-text);
-    min-width: 190px;
+    min-width: 210px;
     z-index: ${max_z_index};
 
     display: flex;
@@ -782,22 +777,19 @@ let popup_css = `
 
   @media (prefers-color-scheme: dark) {
     .popup {
-      --glass-fill: rgba(29, 33, 41, 0.48);
+      --glass-surface: rgba(46, 49, 56, 0.7);
       --glass-border: rgba(255, 255, 255, 0.22);
       --glass-text: #f2f5fa;
       --glass-hover: rgba(255, 255, 255, 0.14);
       --glass-active: rgba(255, 255, 255, 0.2);
       --glass-icon-filter: brightness(0) invert(1) contrast(1.05);
-      box-shadow:
-        0 14px 36px rgba(0, 0, 0, 0.45),
-        inset 0 1px 0 rgba(255, 255, 255, 0.12);
     }
   }
 
   .popup [data-target] {
     cursor: pointer;
     padding: 9px 12px;
-    border-radius: 10px;
+    border-radius: 14px;
     background: transparent;
     color: inherit;
 
