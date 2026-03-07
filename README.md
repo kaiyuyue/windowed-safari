@@ -16,6 +16,12 @@
 > [!IMPORTANT]
 > The distributed app is directly compiled with the code in this repo. It **DOES NOT** collect any data from any location running in the Safari on MacOS. Same as the Chrome extension in the [original disclaimer](PrivacyPolicy.md).
 
+## Updates
+
+Mar 6, 2026: Support Liquid Glass on MacOS
+
+<img width="1392" height="1161" alt="screenshot" src="https://github.com/user-attachments/assets/9892771a-fa8d-4270-b7a4-54e53827b45b" />
+
 ## Installation
 
 - Download the file `Windowed.app.zip` from [latest release](https://github.com/kaiyuyue/Windowed-Safari/releases).
