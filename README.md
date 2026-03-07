@@ -20,7 +20,7 @@
 
 Mar 6, 2026: Support Liquid Glass on MacOS
 
-<img width="1392" height="1161" alt="screenshot" src="https://github.com/user-attachments/assets/9892771a-fa8d-4270-b7a4-54e53827b45b" />
+<img width="1624" height="1060" alt="Screenshot 2026-03-07 at 10 44 37 AM" src="https://github.com/user-attachments/assets/e9f22ebc-3961-462f-9e72-93759367145e" />
 
 ## Installation
 
