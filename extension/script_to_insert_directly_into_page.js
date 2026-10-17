@@ -165,6 +165,24 @@
     send_fullscreen_events();
   }
 
+  // `original_exitFullscreen` is an unbound prototype method. Calling it without a
+  // receiver makes Safari throw "Can only call Document.webkitCancelFullScreen on
+  // instances of Document", so always bind it to the document first.
+  let exit_fullscreen_from_message = () => {
+    let windowed_active = document.querySelector('[data-windowed_long_id_that_does_not_conflict_active]');
+    let native_active = fullscreenelement_aliasses.some(alias => document[alias] != null);
+    if (!windowed_active && !native_active) {
+      // Nothing to exit, and calling the native exit now would only reject.
+      return;
+    }
+    let original = typeof original_exitFullscreen === 'function'
+      ? original_exitFullscreen.bind(document)
+      : () => {};
+    Promise.resolve()
+      .then(() => exitFullscreen.call(document, original))
+      .catch((err) => console.warn('[Windowed] exitFullscreen from message failed:', err));
+  };
+
   window.addEventListener('message', (message) => {
     // Message from content script or parent content script
     if (message.source === message.target || message.source === window.parent) {
@@ -173,7 +191,7 @@
       }
 
       if (message.data?.type === 'WINDOWED-exit-fullscreen') {
-        exitFullscreen.call(document, original_exitFullscreen);
+        exit_fullscreen_from_message();
       }
 
       if (message.data?.type === 'WINDOWED-notify') {
@@ -194,7 +212,7 @@
       }
       if (message.data?.type === 'exit_fullscreen_iframe') {
         // Call my exitFullscreen on the document
-        exitFullscreen.call(document, original_exitFullscreen);
+        exit_fullscreen_from_message();
       }
     }
   });
@@ -222,4 +240,7 @@
       };
     }
   });
+
+  // Lets the content script (isolated world) detect that this script ran.
+  document.documentElement.setAttribute('data-windowed_long_id_that_does_not_conflict_page_script', 'loaded');
 }

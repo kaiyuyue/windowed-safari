@@ -3,6 +3,16 @@
 // Sounds a bit a weird, for a file with 1200 lines, but I want it to so light that I need
 // more rather than less code. No modules or anything fance like that
 
+(() => {
+// Everything lives inside this function so no top-level `let`/`const` reaches the
+// shared content-script global. Safari re-runs content scripts at document_start when
+// a page replaces itself with document.open()/document.write(), while keeping the same
+// JS global, which previously threw "Can't create duplicate variable: 'delay'".
+// @ts-ignore
+if (globalThis.__windowed_content_script_loaded__) return;
+// @ts-ignore
+globalThis.__windowed_content_script_loaded__ = true;
+
 // @ts-ignore
 const browser = /** @type {import("webextension-polyfill-ts").Browser} */ (
   globalThis.browser
@@ -598,6 +608,24 @@ const code_to_insert_in_page = on_webpage`{
     send_fullscreen_events();
   }
 
+  // \`original_exitFullscreen\` is an unbound prototype method. Calling it without a
+  // receiver makes Safari throw "Can only call Document.webkitCancelFullScreen on
+  // instances of Document", so always bind it to the document first.
+  let exit_fullscreen_from_message = () => {
+    let windowed_active = document.querySelector('[data-windowed_long_id_that_does_not_conflict_active]');
+    let native_active = fullscreenelement_aliasses.some(alias => document[alias] != null);
+    if (!windowed_active && !native_active) {
+      // Nothing to exit, and calling the native exit now would only reject.
+      return;
+    }
+    let original = typeof original_exitFullscreen === 'function'
+      ? original_exitFullscreen.bind(document)
+      : () => {};
+    Promise.resolve()
+      .then(() => exitFullscreen.call(document, original))
+      .catch((err) => console.warn('[Windowed] exitFullscreen from message failed:', err));
+  };
+
   window.addEventListener('message', (message) => {
     // Message from content script or parent content script
     if (message.source === message.target || message.source === window.parent) {
@@ -606,7 +634,7 @@ const code_to_insert_in_page = on_webpage`{
       }
 
       if (message.data?.type === 'WINDOWED-exit-fullscreen') {
-        exitFullscreen.call(document, original_exitFullscreen);
+        exit_fullscreen_from_message();
       }
 
       if (message.data?.type === 'WINDOWED-notify') {
@@ -627,7 +655,7 @@ const code_to_insert_in_page = on_webpage`{
       }
       if (message.data?.type === 'exit_fullscreen_iframe') {
         // Call my exitFullscreen on the document
-        exitFullscreen.call(document, original_exitFullscreen);
+        exit_fullscreen_from_message();
       }
     }
   });
@@ -657,6 +685,9 @@ const code_to_insert_in_page = on_webpage`{
       };
     }
   });
+
+  // Lets the content script (isolated world) detect that this script ran.
+  document.documentElement.setAttribute('data-windowed_long_id_that_does_not_conflict_page_script', 'loaded');
 }`;
 
 //// I used to insert the code directly as a <script>...</script> tag,
@@ -670,17 +701,52 @@ const code_to_insert_in_page = on_webpage`{
 // document.documentElement.appendChild(elt);
 // document.documentElement.removeChild(elt);
 
-if (!/(^|\.)youtube\.com$/i.test(window.location.hostname)) {
+const page_script_marker = `${fullscreen_id_namespace}_page_script`;
+const is_page_script_loaded = () =>
+  document.documentElement?.getAttribute(`data-${page_script_marker}`) === "loaded";
+
+// Some sites ship a strict Content-Security-Policy. Safari (unlike Chrome) does not
+// exempt `safari-web-extension://` URLs from `script-src`, so the external file can be
+// refused. When that happens, fall back to an inline copy of the same script
+// (`code_to_insert_in_page`), reusing the page's own CSP nonce when one is available.
+const inject_page_script_inline = () => {
+  if (is_page_script_loaded()) return true;
+  try {
+    let elt = document.createElement("script");
+    let nonce = /** @type {HTMLScriptElement | null} */ (
+      document.querySelector("script[nonce]")
+    )?.nonce;
+    if (nonce) elt.nonce = nonce;
+    elt.textContent = code_to_insert_in_page;
+    document.documentElement.appendChild(elt);
+    elt.remove();
+  } catch (err) {
+    // Ignore, checked below
+  }
+  return is_page_script_loaded();
+};
+
+const inject_page_script = () => {
   let elt = document.createElement("script");
   elt.src = browser.runtime.getURL("script_to_insert_directly_into_page.js");
   elt.onload = () => {
     elt.remove();
   };
   elt.onerror = () => {
-    console.error("[WINDOWED] Failed to inject script_to_insert_directly_into_page.js");
     elt.remove();
+    if (inject_page_script_inline()) return;
+    // Not an error we can do anything about: the page's CSP refuses every form of
+    // script injection, so Windowed stays out of the way and native fullscreen is used.
+    console.warn(
+      "[Windowed] Page CSP blocked script_to_insert_directly_into_page.js; falling back to native fullscreen on",
+      window.location.href,
+    );
   };
   document.documentElement.appendChild(elt);
+};
+
+if (!/(^|\.)youtube\.com$/i.test(window.location.hostname)) {
+  inject_page_script();
 }
 
 //// Debugging parity check disabled in Safari: fetching extension script URLs from page context
@@ -1522,9 +1588,7 @@ let onEscapePress = (fn) => {
 
 let check_disabled_state = async () => {
   try {
-    console.warn("-0-", get_host_config_local());
     let { mode, pip } = await get_host_config_local();
-    console.warn("--->", mode, pip)
     window.postMessage(
       {
         type: "WINDOWED-notify",
@@ -1544,3 +1608,4 @@ browser.runtime.onConnect.addListener(async (port) => {
   port.postMessage({ type: "I_exists_ping" });
   check_disabled_state();
 });
+})();
